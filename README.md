@@ -1,73 +1,41 @@
-# Welcome to your Lovable project
+## EscapeLazy
 
-## Project info
+### 페르소나
+과제가 많은 대학생 - 김땡땡 (21세)
 
-**URL**: https://lovable.dev/projects/2144d36a-8268-4a9b-ba73-f32104c0ba00
+직업: 컴퓨터공학과
 
-## How can I edit this code?
+라이프스타일: 미루기, 할 일 시작하는 걸 어려워함
 
-There are several ways of editing your application.
+목표: 빠르고 효율적인 할 일 쪼개로 접근하기 쉽게 느끼도록 한다.
 
-**Use Lovable**
+니즈: 할 일 작게 쪼개기
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/2144d36a-8268-4a9b-ba73-f32104c0ba00) and start prompting.
+페인 포인트: 할 일 단위가 큼, 어떻게 시작할지 막막함
 
-Changes made via Lovable will be committed automatically to this repo.
+### 사용자 시나리오 및 스토리
+객체지향 프로그래밍 - 계산기 만들기 서비스를 개발해야 하는 김땡땡
 
-**Use your preferred IDE**
+상황: 객체지향 프로그래밍 과목에서 계산기를 만들어야 하는데 어떻게 만들면 좋을지 감이 안잡힌다.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 사용자 시나리오:
+1. Escape Lazy 접속
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+2. 해아 할 작업 입력
+   
+3. 데드라인 입력
+  
+4. AI 요청
+   
+5. 데드라인에 맞게 할 일을 작게 쪼개서 날짜에 맞게 배치해줌
+   
+6. 체크리스트를 통해 관리 가능
+   
+7. 달력뷰로 날짜마다 확인 가능
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/2144d36a-8268-4a9b-ba73-f32104c0ba00) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### 주요 기능
+1. 시작하기 막막한 할 일 입력
+2. 마감 기간 입력
+3. 마감 기간에 맞춰서 할 일을 작게 쪼갠다.
+4. 체크리스트 형태로 해야할 일 체크 가능
+5. 달력 view로 각 날짜에 맞는 할 일 확인 가능 
