@@ -4,7 +4,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ProjectTask } from '@/types/project';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, parseISO, isValid } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 interface CalendarViewProps {
@@ -15,19 +15,39 @@ interface CalendarViewProps {
 export const CalendarView = ({ tasks, onTaskToggle }: CalendarViewProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
+  // 날짜 파싱 헬퍼 함수
+  const parseTaskDate = (dateString: string): Date | null => {
+    try {
+      // ISO 형식인지 확인
+      if (dateString.includes('-') && dateString.length === 10) {
+        const parsed = parseISO(dateString);
+        return isValid(parsed) ? parsed : null;
+      }
+      
+      // 한국어 형식 파싱 시도
+      const parsed = new Date(dateString);
+      return isValid(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  };
+
   // 선택된 날짜의 작업들
   const selectedDateTasks = tasks.filter(task => {
-    const taskDate = new Date(task.dueDate);
-    return isSameDay(taskDate, selectedDate);
+    const taskDate = parseTaskDate(task.dueDate);
+    return taskDate && isSameDay(taskDate, selectedDate);
   });
 
   // 작업이 있는 날짜들
   const tasksData = tasks.reduce((acc, task) => {
-    const dateKey = format(new Date(task.dueDate), 'yyyy-MM-dd');
-    if (!acc[dateKey]) {
-      acc[dateKey] = [];
+    const taskDate = parseTaskDate(task.dueDate);
+    if (taskDate) {
+      const dateKey = format(taskDate, 'yyyy-MM-dd');
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
+      }
+      acc[dateKey].push(task);
     }
-    acc[dateKey].push(task);
     return acc;
   }, {} as Record<string, ProjectTask[]>);
 
