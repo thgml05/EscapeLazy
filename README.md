@@ -1,5 +1,8 @@
 ## EscapeLazy
 
+### 배포 url
+(https://escapelazy.lovable.app/)
+
 ### 페르소나
 과제가 많은 대학생 - 김땡땡 (21세)
 
