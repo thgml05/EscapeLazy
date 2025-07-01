@@ -15,16 +15,30 @@ interface CalendarViewProps {
 export const CalendarView = ({ tasks, onTaskToggle }: CalendarViewProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  // 날짜 파싱 헬퍼 함수
+  // 날짜 파싱 헬퍼 함수 - 한국어 날짜 형식도 처리
   const parseTaskDate = (dateString: string): Date | null => {
     try {
-      // ISO 형식인지 확인
+      // ISO 형식 (YYYY-MM-DD)
       if (dateString.includes('-') && dateString.length === 10) {
         const parsed = parseISO(dateString);
         return isValid(parsed) ? parsed : null;
       }
       
-      // 한국어 형식 파싱 시도
+      // 한국어 형식 파싱 (예: "12월 25일 (수)")
+      if (dateString.includes('월') && dateString.includes('일')) {
+        const currentYear = new Date().getFullYear();
+        const monthMatch = dateString.match(/(\d+)월/);
+        const dayMatch = dateString.match(/(\d+)일/);
+        
+        if (monthMatch && dayMatch) {
+          const month = parseInt(monthMatch[1]) - 1; // JS Date는 0부터 시작
+          const day = parseInt(dayMatch[1]);
+          const parsed = new Date(currentYear, month, day);
+          return isValid(parsed) ? parsed : null;
+        }
+      }
+      
+      // 일반적인 날짜 파싱 시도
       const parsed = new Date(dateString);
       return isValid(parsed) ? parsed : null;
     } catch {
