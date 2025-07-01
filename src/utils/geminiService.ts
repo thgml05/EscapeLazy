@@ -7,7 +7,7 @@ interface GeminiTask {
 }
 
 export const breakdownTask = async (apiKey: string, goal: string, deadline: string): Promise<GeminiTask[]> => {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   
   const prompt = `
 주어진 목표를 학생이 수행할 수 있는 구체적인 작업 단계로 나누어 주세요.
@@ -34,6 +34,8 @@ export const breakdownTask = async (apiKey: string, goal: string, deadline: stri
 `;
 
   try {
+    console.log('Gemini API 호출 시작:', { url, goal, deadline });
+    
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -48,20 +50,29 @@ export const breakdownTask = async (apiKey: string, goal: string, deadline: stri
       })
     });
 
+    console.log('API 응답 상태:', response.status);
+
     if (!response.ok) {
-      throw new Error(`API 요청 실패: ${response.status}`);
+      const errorData = await response.json();
+      console.error('API 에러 응답:', errorData);
+      throw new Error(`API 요청 실패: ${response.status} - ${errorData.error?.message || '알 수 없는 오류'}`);
     }
 
     const data = await response.json();
+    console.log('API 응답 데이터:', data);
+    
     const generatedText = data.candidates[0].content.parts[0].text;
+    console.log('생성된 텍스트:', generatedText);
     
     // JSON 파싱
     const jsonMatch = generatedText.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
+      console.error('JSON 매치 실패:', generatedText);
       throw new Error('올바른 JSON 형식을 찾을 수 없습니다.');
     }
     
     const tasks = JSON.parse(jsonMatch[0]);
+    console.log('파싱된 작업들:', tasks);
     return tasks;
   } catch (error) {
     console.error('Gemini API 에러:', error);

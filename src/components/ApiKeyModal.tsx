@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +32,9 @@ export const ApiKeyModal = ({ isOpen, onClose, onSave, currentApiKey }: ApiKeyMo
             <Key className="w-5 h-5 text-coral-500" />
             Gemini API 키 설정
           </DialogTitle>
+          <DialogDescription className="text-gray-600">
+            AI 기능을 사용하기 위해 Gemini API 키를 입력해주세요.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 pt-4">
@@ -69,7 +72,7 @@ export const ApiKeyModal = ({ isOpen, onClose, onSave, currentApiKey }: ApiKeyMo
               <strong>Gemini API 키를 얻는 방법:</strong>
             </p>
             <ol className="text-sm text-cream-600 space-y-1 ml-4 list-decimal">
-              <li>Google AI Studio에 접속</li>
+              <li>Google AI Studio (aistudio.google.com)에 접속</li>
               <li>Google 계정으로 로그인</li>
               <li>"Get API Key" 버튼 클릭</li>
               <li>새 API 키 생성</li>
