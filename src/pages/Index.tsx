@@ -5,11 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ApiKeyModal } from '@/components/ApiKeyModal';
 import { TaskCard } from '@/components/TaskCard';
 import { ProgressBar } from '@/components/ProgressBar';
+import { CalendarView } from '@/components/CalendarView';
+import { ProjectSelector } from '@/components/ProjectSelector';
 import { breakdownTask } from '@/utils/geminiService';
 import { scheduleTasksToDeadline, ScheduledTask } from '@/utils/scheduleService';
+import { saveProject, getProjects, deleteProject, saveProjectTasks, getProjectTasks, updateTaskStatus } from '@/utils/projectService';
+import { Project, ProjectTask } from '@/types/project';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Target, 
@@ -17,8 +22,8 @@ import {
   Settings, 
   Sparkles, 
   ChevronRight,
-  PlusCircle,
-  RefreshCw
+  RefreshCw,
+  List
 } from 'lucide-react';
 
 const Index = () => {
@@ -27,25 +32,38 @@ const Index = () => {
   const [showApiModal, setShowApiModal] = useState(false);
   const [goal, setGoal] = useState('');
   const [deadline, setDeadline] = useState('');
-  const [tasks, setTasks] = useState<ScheduledTask[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentProject, setCurrentProject] = useState('');
+  
+  // 프로젝트 관리 상태
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [projectTasks, setProjectTasks] = useState<ProjectTask[]>([]);
 
   useEffect(() => {
     const savedApiKey = localStorage.getItem('gemini_api_key');
-    const savedTasks = localStorage.getItem('escape_lazy_tasks');
-    const savedProject = localStorage.getItem('current_project');
-    
     if (savedApiKey) {
       setApiKey(savedApiKey);
     }
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
-    }
-    if (savedProject) {
-      setCurrentProject(savedProject);
+    
+    // 프로젝트 로드
+    const loadedProjects = getProjects();
+    setProjects(loadedProjects);
+    
+    // 마지막으로 선택된 프로젝트 로드
+    const lastProjectId = localStorage.getItem('last_selected_project');
+    if (lastProjectId && loadedProjects.length > 0) {
+      const lastProject = loadedProjects.find(p => p.id === lastProjectId);
+      if (lastProject) {
+        setSelectedProject(lastProject);
+        loadProjectTasks(lastProjectId);
+      }
     }
   }, []);
+
+  const loadProjectTasks = (projectId: string) => {
+    const tasks = getProjectTasks(projectId);
+    setProjectTasks(tasks);
+  };
 
   const handleApiKeySave = (newApiKey: string) => {
     setApiKey(newApiKey);
@@ -56,12 +74,52 @@ const Index = () => {
     });
   };
 
+  const handleProjectSelect = (project: Project | null) => {
+    setSelectedProject(project);
+    if (project) {
+      localStorage.setItem('last_selected_project', project.id);
+      loadProjectTasks(project.id);
+    } else {
+      localStorage.removeItem('last_selected_project');
+      setProjectTasks([]);
+      setGoal('');
+      setDeadline('');
+    }
+  };
+
+  const handleProjectDelete = (projectId: string) => {
+    deleteProject(projectId);
+    const updatedProjects = getProjects();
+    setProjects(updatedProjects);
+    
+    if (selectedProject?.id === projectId) {
+      setSelectedProject(null);
+      setProjectTasks([]);
+    }
+    
+    toast({
+      title: "프로젝트가 삭제되었습니다",
+    });
+  };
+
   const handleTaskToggle = (taskId: string) => {
-    const updatedTasks = tasks.map(task => 
+    const updatedTasks = projectTasks.map(task => 
       task.id === taskId ? { ...task, completed: !task.completed } : task
     );
-    setTasks(updatedTasks);
-    localStorage.setItem('escape_lazy_tasks', JSON.stringify(updatedTasks));
+    setProjectTasks(updatedTasks);
+    updateTaskStatus(taskId, !projectTasks.find(t => t.id === taskId)?.completed);
+    
+    // 프로젝트 진행률 업데이트
+    if (selectedProject) {
+      const completedCount = updatedTasks.filter(t => t.completed).length;
+      const updatedProject = {
+        ...selectedProject,
+        completedTasks: completedCount
+      };
+      setSelectedProject(updatedProject);
+      saveProject(updatedProject);
+      setProjects(getProjects());
+    }
     
     const completedTask = updatedTasks.find(t => t.id === taskId);
     if (completedTask?.completed) {
@@ -92,10 +150,31 @@ const Index = () => {
       const geminiTasks = await breakdownTask(apiKey, goal, deadline);
       const scheduledTasks = scheduleTasksToDeadline(geminiTasks, deadline);
       
-      setTasks(scheduledTasks);
-      setCurrentProject(goal);
-      localStorage.setItem('escape_lazy_tasks', JSON.stringify(scheduledTasks));
-      localStorage.setItem('current_project', goal);
+      // 새 프로젝트 생성
+      const newProject: Project = {
+        id: `project-${Date.now()}`,
+        name: goal,
+        deadline,
+        createdAt: new Date().toISOString(),
+        completedTasks: 0,
+        totalTasks: scheduledTasks.length
+      };
+      
+      // 프로젝트 작업들 변환
+      const newProjectTasks: ProjectTask[] = scheduledTasks.map(task => ({
+        ...task,
+        projectId: newProject.id
+      }));
+      
+      // 저장
+      saveProject(newProject);
+      saveProjectTasks(newProject.id, newProjectTasks);
+      
+      // 상태 업데이트
+      setProjects(getProjects());
+      setSelectedProject(newProject);
+      setProjectTasks(newProjectTasks);
+      localStorage.setItem('last_selected_project', newProject.id);
       
       toast({
         title: "목표가 분해되었습니다! ✨",
@@ -112,17 +191,7 @@ const Index = () => {
     }
   };
 
-  const handleNewProject = () => {
-    setTasks([]);
-    setCurrentProject('');
-    setGoal('');
-    setDeadline('');
-    localStorage.removeItem('escape_lazy_tasks');
-    localStorage.removeItem('current_project');
-  };
-
-  const completedTasks = tasks.filter(task => task.completed).length;
-  const todayTasks = tasks.filter(task => {
+  const todayTasks = projectTasks.filter(task => {
     const today = new Date().toLocaleDateString('ko-KR', {
       month: 'long',
       day: 'numeric',
@@ -131,9 +200,11 @@ const Index = () => {
     return task.dueDate === today;
   });
 
+  const completedTasks = projectTasks.filter(task => task.completed).length;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream-50 via-white to-sage-50">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -162,8 +233,18 @@ const Index = () => {
           </Button>
         </div>
 
+        {/* Project Selector */}
+        <div className="mb-8">
+          <ProjectSelector
+            projects={projects}
+            selectedProject={selectedProject}
+            onSelectProject={handleProjectSelect}
+            onDeleteProject={handleProjectDelete}
+          />
+        </div>
+
         {/* Main Content */}
-        {tasks.length === 0 ? (
+        {!selectedProject ? (
           /* Goal Input Form */
           <Card className="p-8 rounded-3xl border-2 border-gray-200 shadow-large bg-white/90 backdrop-blur-sm">
             <div className="space-y-6">
@@ -229,60 +310,73 @@ const Index = () => {
             </div>
           </Card>
         ) : (
-          /* Task Management */
+          /* Project Management with Tabs */
           <div className="space-y-8">
             {/* Progress Section */}
             <ProgressBar
               completed={completedTasks}
-              total={tasks.length}
-              projectName={currentProject}
+              total={projectTasks.length}
+              projectName={selectedProject.name}
             />
 
-            {/* Today's Tasks */}
-            {todayTasks.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-coral-500" />
-                  <h2 className="text-xl font-bold text-gray-800">오늘 할 일</h2>
-                  <span className="px-3 py-1 bg-coral-100 text-coral-700 rounded-full text-sm font-medium">
-                    {todayTasks.filter(t => !t.completed).length}개 남음
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  {todayTasks.map(task => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onToggle={handleTaskToggle}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Tabs for different views */}
+            <Tabs defaultValue="tasks" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 rounded-2xl bg-white border-2 border-gray-200 p-1">
+                <TabsTrigger value="tasks" className="rounded-xl flex items-center gap-2">
+                  <List className="w-4 h-4" />
+                  작업 목록
+                </TabsTrigger>
+                <TabsTrigger value="calendar" className="rounded-xl flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  달력 뷰
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="tasks" className="space-y-6 mt-6">
+                {/* Today's Tasks */}
+                {todayTasks.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-coral-500" />
+                      <h2 className="text-xl font-bold text-gray-800">오늘 할 일</h2>
+                      <span className="px-3 py-1 bg-coral-100 text-coral-700 rounded-full text-sm font-medium">
+                        {todayTasks.filter(t => !t.completed).length}개 남음
+                      </span>
+                    </div>
+                    <div className="space-y-3">
+                      {todayTasks.map(task => (
+                        <TaskCard
+                          key={task.id}
+                          task={task}
+                          onToggle={handleTaskToggle}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            {/* All Tasks */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-800">전체 작업</h2>
-                <Button
-                  variant="outline"
-                  onClick={handleNewProject}
-                  className="rounded-xl border-2 border-gray-200 hover:bg-gray-50 button-3d"
-                >
-                  <PlusCircle className="w-4 h-4 mr-2" />
-                  새 프로젝트
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {tasks.map(task => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onToggle={handleTaskToggle}
-                  />
-                ))}
-              </div>
-            </div>
+                {/* All Tasks */}
+                <div className="space-y-4">
+                  <h2 className="text-xl font-bold text-gray-800">전체 작업</h2>
+                  <div className="space-y-3">
+                    {projectTasks.map(task => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        onToggle={handleTaskToggle}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="calendar" className="mt-6">
+                <CalendarView
+                  tasks={projectTasks}
+                  onTaskToggle={handleTaskToggle}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         )}
 
