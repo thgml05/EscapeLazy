@@ -1,6 +1,11 @@
-
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,12 +18,27 @@ interface ApiKeyModalProps {
   currentApiKey?: string;
 }
 
-export const ApiKeyModal = ({ isOpen, onClose, onSave, currentApiKey }: ApiKeyModalProps) => {
+export const ApiKeyModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  currentApiKey,
+}: ApiKeyModalProps) => {
   const [apiKey, setApiKey] = useState(currentApiKey || '');
   const [showKey, setShowKey] = useState(false);
 
   const handleSave = () => {
     if (apiKey.trim()) {
+      // API 키와 함께 만료 시간 저장 (7일 후)
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const apiKeyData = {
+        key: apiKey.trim(),
+        expiresAt: expiresAt.toISOString(),
+      };
+
+      localStorage.setItem('gemini_api_key_data', JSON.stringify(apiKeyData));
       onSave(apiKey.trim());
       onClose();
     }
@@ -33,19 +53,23 @@ export const ApiKeyModal = ({ isOpen, onClose, onSave, currentApiKey }: ApiKeyMo
             Gemini API 키 설정
           </DialogTitle>
           <DialogDescription className="text-gray-600">
-            AI 기능을 사용하기 위해 Gemini API 키를 입력해주세요.
+            AI 기능을 사용하기 위해 Gemini API 키를 입력해주세요. 입력한 API
+            키는 7일간 저장됩니다.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
-            <Label htmlFor="apikey" className="text-sm font-medium text-gray-700">
+            <Label
+              htmlFor="apikey"
+              className="text-sm font-medium text-gray-700"
+            >
               API 키
             </Label>
             <div className="relative">
               <Input
                 id="apikey"
-                type={showKey ? "text" : "password"}
+                type={showKey ? 'text' : 'password'}
                 placeholder="AIzaSy..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
@@ -66,7 +90,7 @@ export const ApiKeyModal = ({ isOpen, onClose, onSave, currentApiKey }: ApiKeyMo
               </Button>
             </div>
           </div>
-          
+
           <div className="bg-cream-50 border border-cream-200 rounded-xl p-4">
             <p className="text-sm text-cream-700 mb-2">
               <strong>Gemini API 키를 얻는 방법:</strong>
@@ -79,7 +103,7 @@ export const ApiKeyModal = ({ isOpen, onClose, onSave, currentApiKey }: ApiKeyMo
               <li>생성된 키를 복사하여 여기에 입력</li>
             </ol>
           </div>
-          
+
           <div className="flex gap-3 pt-2">
             <Button
               variant="outline"

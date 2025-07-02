@@ -1,16 +1,15 @@
-
 import { Project, ProjectTask } from '@/types/project';
 
 export const saveProject = (project: Project): void => {
   const projects = getProjects();
-  const existingIndex = projects.findIndex(p => p.id === project.id);
-  
+  const existingIndex = projects.findIndex((p) => p.id === project.id);
+
   if (existingIndex >= 0) {
     projects[existingIndex] = project;
   } else {
     projects.push(project);
   }
-  
+
   localStorage.setItem('escape_lazy_projects', JSON.stringify(projects));
 };
 
@@ -20,18 +19,24 @@ export const getProjects = (): Project[] => {
 };
 
 export const deleteProject = (projectId: string): void => {
-  const projects = getProjects().filter(p => p.id !== projectId);
+  const projects = getProjects().filter((p) => p.id !== projectId);
   localStorage.setItem('escape_lazy_projects', JSON.stringify(projects));
-  
+
   // 해당 프로젝트의 작업들도 삭제
   const tasks = getProjectTasks();
-  const filteredTasks = tasks.filter(t => t.projectId !== projectId);
-  localStorage.setItem('escape_lazy_project_tasks', JSON.stringify(filteredTasks));
+  const filteredTasks = tasks.filter((t) => t.projectId !== projectId);
+  localStorage.setItem(
+    'escape_lazy_project_tasks',
+    JSON.stringify(filteredTasks)
+  );
 };
 
-export const saveProjectTasks = (projectId: string, tasks: ProjectTask[]): void => {
+export const saveProjectTasks = (
+  projectId: string,
+  tasks: ProjectTask[]
+): void => {
   const allTasks = getProjectTasks();
-  const filteredTasks = allTasks.filter(t => t.projectId !== projectId);
+  const filteredTasks = allTasks.filter((t) => t.projectId !== projectId);
   const newTasks = [...filteredTasks, ...tasks];
   localStorage.setItem('escape_lazy_project_tasks', JSON.stringify(newTasks));
 };
@@ -39,13 +44,64 @@ export const saveProjectTasks = (projectId: string, tasks: ProjectTask[]): void 
 export const getProjectTasks = (projectId?: string): ProjectTask[] => {
   const tasks = localStorage.getItem('escape_lazy_project_tasks');
   const allTasks = tasks ? JSON.parse(tasks) : [];
-  return projectId ? allTasks.filter((t: ProjectTask) => t.projectId === projectId) : allTasks;
+  return projectId
+    ? allTasks.filter((t: ProjectTask) => t.projectId === projectId)
+    : allTasks;
 };
 
 export const updateTaskStatus = (taskId: string, completed: boolean): void => {
   const tasks = getProjectTasks();
-  const updatedTasks = tasks.map(task => 
+  const updatedTasks = tasks.map((task) =>
     task.id === taskId ? { ...task, completed } : task
   );
-  localStorage.setItem('escape_lazy_project_tasks', JSON.stringify(updatedTasks));
+  localStorage.setItem(
+    'escape_lazy_project_tasks',
+    JSON.stringify(updatedTasks)
+  );
+};
+
+export const updateTaskDueDate = (taskId: string, dueDate: string): void => {
+  const tasks = getProjectTasks();
+  const updatedTasks = tasks.map((task) =>
+    task.id === taskId ? { ...task, dueDate } : task
+  );
+  localStorage.setItem(
+    'escape_lazy_project_tasks',
+    JSON.stringify(updatedTasks)
+  );
+};
+
+export const updateTask = (
+  taskId: string,
+  updates: Partial<ProjectTask>
+): void => {
+  const tasks = getProjectTasks();
+  const updatedTasks = tasks.map((task) =>
+    task.id === taskId ? { ...task, ...updates } : task
+  );
+  localStorage.setItem(
+    'escape_lazy_project_tasks',
+    JSON.stringify(updatedTasks)
+  );
+};
+
+export const deleteTask = (taskId: string): void => {
+  const tasks = getProjectTasks();
+  const updatedTasks = tasks.filter((task) => task.id !== taskId);
+  localStorage.setItem(
+    'escape_lazy_project_tasks',
+    JSON.stringify(updatedTasks)
+  );
+};
+
+export const syncProjectProgress = (): void => {
+  const projects = getProjects();
+  const allTasks = getProjectTasks();
+  const updatedProjects = projects.map((project) => {
+    const tasks = allTasks.filter((t) => t.projectId === project.id);
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter((t) => t.completed).length;
+    return { ...project, totalTasks, completedTasks };
+  });
+  localStorage.setItem('escape_lazy_projects', JSON.stringify(updatedProjects));
 };

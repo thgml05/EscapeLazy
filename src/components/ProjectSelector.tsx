@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -11,13 +10,15 @@ interface ProjectSelectorProps {
   selectedProject: Project | null;
   onSelectProject: (project: Project | null) => void;
   onDeleteProject: (projectId: string) => void;
+  onNewProject: () => void;
 }
 
-export const ProjectSelector = ({ 
-  projects, 
-  selectedProject, 
-  onSelectProject, 
-  onDeleteProject 
+export const ProjectSelector = ({
+  projects,
+  selectedProject,
+  onSelectProject,
+  onDeleteProject,
+  onNewProject,
 }: ProjectSelectorProps) => {
   return (
     <Card className="p-6 rounded-3xl border-2 border-gray-200 shadow-large bg-white/90">
@@ -25,11 +26,10 @@ export const ProjectSelector = ({
         <h3 className="text-xl font-bold text-gray-800">프로젝트</h3>
         <Button
           variant="outline"
-          onClick={() => onSelectProject(null)}
+          onClick={onNewProject}
           className="rounded-xl border-2 border-gray-200 hover:bg-gray-50 button-3d"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          새 프로젝트
+          <Plus className="w-4 h-4 mr-2" />새 프로젝트
         </Button>
       </div>
 
@@ -39,7 +39,7 @@ export const ProjectSelector = ({
             아직 생성된 프로젝트가 없습니다.
           </p>
         ) : (
-          projects.map(project => (
+          projects.map((project) => (
             <div
               key={project.id}
               className={`p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 card-3d ${
@@ -57,20 +57,30 @@ export const ProjectSelector = ({
                   <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      <span>{new Date(project.deadline).toLocaleDateString('ko-KR')}</span>
+                      <span>
+                        {new Date(project.deadline).toLocaleDateString('ko-KR')}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Target className="w-4 h-4" />
-                      <span>{project.completedTasks}/{project.totalTasks}</span>
+                      <span>
+                        {project.completedTasks}/{project.totalTasks}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="text-xs">
-                      진행률: {project.totalTasks > 0 ? Math.round((project.completedTasks / project.totalTasks) * 100) : 0}%
+                      진행률:{' '}
+                      {project.totalTasks > 0
+                        ? Math.round(
+                            (project.completedTasks / project.totalTasks) * 100
+                          )
+                        : 0}
+                      %
                     </Badge>
                   </div>
                 </div>
-                
+
                 <Button
                   variant="ghost"
                   size="sm"
