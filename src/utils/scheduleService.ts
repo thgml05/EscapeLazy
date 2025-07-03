@@ -6,6 +6,9 @@ export interface ScheduledTask {
   completed: boolean;
   difficulty: 'easy' | 'medium' | 'hard';
   originalIndex: number;
+  priority?: 'low' | 'medium' | 'high' | 'critical';
+  points?: number;
+  isUserAdded?: boolean;
 }
 
 export interface ScheduleSettings {
@@ -87,6 +90,9 @@ export const scheduleTasksToDeadline = (
       completed: false,
       difficulty: task.difficulty,
       originalIndex: index,
+      priority: 'medium',
+      points: 0,
+      isUserAdded: false,
     });
   });
 
@@ -190,4 +196,42 @@ export const rescheduleIncompleteTasks = (
     }
     return task;
   });
+};
+
+// 같은 날짜의 작업들을 우선순위에 따라 재배치
+export const sortTasksByPriority = (
+  tasks: ScheduledTask[]
+): ScheduledTask[] => {
+  const priorityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+
+  return [...tasks].sort((a, b) => {
+    const priorityA = priorityOrder[a.priority || 'medium'];
+    const priorityB = priorityOrder[b.priority || 'medium'];
+
+    // 우선순위가 같으면 원래 순서 유지
+    if (priorityA === priorityB) {
+      return a.originalIndex - b.originalIndex;
+    }
+
+    // 우선순위가 높은 것이 먼저
+    return priorityB - priorityA;
+  });
+};
+
+// 날짜별로 작업을 그룹화하고 각 그룹 내에서 우선순위에 따라 정렬
+export const groupAndSortTasksByDate = (
+  tasks: ScheduledTask[]
+): Record<string, ScheduledTask[]> => {
+  const tasksByDate = tasks.reduce((acc, task) => {
+    if (!acc[task.dueDate]) acc[task.dueDate] = [];
+    acc[task.dueDate].push(task);
+    return acc;
+  }, {} as Record<string, ScheduledTask[]>);
+
+  // 각 날짜별로 우선순위에 따라 정렬
+  Object.keys(tasksByDate).forEach((date) => {
+    tasksByDate[date] = sortTasksByPriority(tasksByDate[date]);
+  });
+
+  return tasksByDate;
 };
